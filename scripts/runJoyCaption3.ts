@@ -64,7 +64,7 @@ async function main({
     // 只处理未标注的
     .filter((x) => fs.existsSync(x.caption_filepath) === false)
     .reduce((acc, job, i) => {
-      const batch = i % batch_size;
+      const batch = Math.floor(i / batch_size);
       if (!acc[batch]) {
         acc[batch] = [];
       }

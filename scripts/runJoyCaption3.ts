@@ -18,16 +18,19 @@ type Job = {
   filepath: string;
   caption_filepath: string;
   caption: string;
+  prefix_caption: string;
 };
 
 async function main({
   input_dir,
   write_caption_text = false,
   batch_size = 4,
+  prefix_caption = "",
 }: {
   input_dir: string;
   write_caption_text: boolean;
   batch_size?: number;
+  prefix_caption?: string;
 }) {
   if (!input_dir) {
     throw new Error("input_dir is required");
@@ -42,7 +45,11 @@ async function main({
   await client.connect();
   const flow1 = new JoyCaption3Flow(client);
 
-  const files = fs.readdirSync(input_dir);
+  const files = fs.readdirSync(input_dir).filter((x) => {
+    return [".png", ".jpeg", ".jpg", ".webp"].some((y) =>
+      x.toLowerCase().endsWith(y)
+    );
+  });
   const jobs = files.map((fn) => {
     const filepath = path.join(input_dir, fn);
     const filename = path.basename(filepath);
@@ -58,6 +65,7 @@ async function main({
       caption_filename,
       caption_filepath,
       caption,
+      prefix_caption,
     } as Job;
   });
   const batches = jobs
@@ -81,14 +89,18 @@ async function main({
         filepath: fp.filepath,
       })),
     });
-    const texts: string[] = (output.data as any).text;
+    const texts: string[] = output.data?.text ?? [];
     texts.forEach((caption, idx) => {
       batch[idx].caption = caption;
     });
 
     for (const item of batch) {
       if (write_caption_text) {
-        fs.writeFileSync(item.caption_filepath, item.caption, "utf-8");
+        fs.writeFileSync(
+          item.caption_filepath,
+          item.prefix_caption + ", " + item.caption,
+          "utf-8"
+        );
       }
     }
   }
@@ -97,7 +109,7 @@ async function main({
 /**
  * usage:
  *
- * npx tsx ./scripts/runJoyCaption3.ts --input_dir=./input_data/ --write_caption_text
+ * npx tsx ./scripts/runJoyCaption3.ts --input_dir=./input_data/ --write_caption_text --prefix_caption="xxxx"
  */
 main(mri(process.argv.slice(2)))
   .then((msg: any) => {

@@ -1,4 +1,8 @@
-import { Client } from "@stable-canvas/comfyui-client";
+import {
+  Client,
+  WorkflowOutput,
+  WorkflowOutputResolver,
+} from "@stable-canvas/comfyui-client";
 import { BaseFlow } from "../Baseflow";
 import { FileInput } from "../types";
 import { loadFileInput } from "../common";
@@ -51,14 +55,31 @@ const caption_lengths = [
   "250",
 ] as const;
 
-export class JoyCaption3Flow extends BaseFlow<{
+type JoyCaption3FlowPayload = {
   images: FileInput[];
   quantization_mode?: "bf16" | "nf4" | "int8";
   device?: "cuda" | "cpu";
   caption_type?: (typeof caption_types)[number];
   caption_length?: (typeof caption_lengths)[number];
   user_prompt?: string;
-}> {
+};
+type JoyCaption3FlowOutputData = {
+  text: string[];
+};
+
+export class JoyCaption3Flow extends BaseFlow<JoyCaption3FlowPayload> {
+  resolver: WorkflowOutputResolver<JoyCaption3FlowOutputData>;
+
+  run(
+    payload: JoyCaption3FlowPayload,
+    options?: {
+      ping: boolean;
+      check_dependents: boolean;
+    }
+  ): Promise<WorkflowOutput<JoyCaption3FlowOutputData>> {
+    return super.run(payload, options);
+  }
+
   constructor(client: Client) {
     super(client, async (payload, cls) => {
       const images_buff = await Promise.all(payload.images.map(loadFileInput));
@@ -88,11 +109,11 @@ export class JoyCaption3Flow extends BaseFlow<{
       });
     });
 
-    // TODO
     this.resolver = (acc, out) => {
       return {
         ...acc,
         data: {
+          text: [],
           ...(acc.data || {}),
           ...out,
         },

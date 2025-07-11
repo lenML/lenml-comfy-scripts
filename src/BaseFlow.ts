@@ -6,7 +6,7 @@ import {
 import { uniq } from "./common";
 
 export class BaseFlow<Payload = unknown> {
-  resolver: WorkflowOutputResolver = (acc, out) => {
+  resolver: WorkflowOutputResolver<any> = (acc, out) => {
     return {
       ...acc,
       data: {

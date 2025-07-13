@@ -26,11 +26,13 @@ async function main({
   write_caption_text = false,
   batch_size = 4,
   prefix_caption = "",
+  clean_mem = false,
 }: {
   input_dir: string;
   write_caption_text: boolean;
   batch_size?: number;
   prefix_caption?: string;
+  clean_mem?: boolean;
 }) {
   if (!input_dir) {
     throw new Error("input_dir is required");
@@ -43,6 +45,8 @@ async function main({
   }
 
   await client.connect();
+  if (clean_mem) await client.free({ unload_models: true, free_memory: true });
+
   const flow1 = new JoyCaption3Flow(client);
 
   const files = fs.readdirSync(input_dir).filter((x) => {
